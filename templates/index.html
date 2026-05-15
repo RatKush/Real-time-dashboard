@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<!--
+  templates/index.html — Dashboard Shell
+  ========================================
+  Single-page entry point rendered by Flask.
+
+  DOM structure:
+    <header>  top-bar      — brand, mode toggle, status
+    <nav>     tab-bar      — one button per market sheet
+    <nav>     chip-bar     — group chips: Default | spread | Fly | Dfly | …
+    <main>    main-panel
+      <section> curve-section   — top strategy-curve chart (always visible)
+      <div>     content-row
+        <section> strategy-section  — drag-and-drop card grid
+        <aside>   table-section     — ratio table
+    <div>     focus-overlay  — modal for expanded chart (click any card)
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RTD Curve Monitor</title>
+
+  <!-- Fonts: JetBrains Mono (numbers) + Syne (UI labels) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500&family=Syne:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/static/css/base.css">
+  <link rel="stylesheet" href="/static/css/layout.css">
+  <link rel="stylesheet" href="/static/css/chart.css">
+  <link rel="stylesheet" href="/static/css/table.css">
+  <link rel="stylesheet" href="/static/css/overview.css">
+  
+</head>
+
+
+<body>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TOP BAR — brand · mode toggle · connection status
+  ══════════════════════════════════════════════════════════════════════ -->
+  <header class="top-bar">
+    <div class="top-bar__brand">
+      <span class="top-bar__logo">▲</span>
+      <span class="top-bar__title">RTD CURVE MONITOR</span>
+    </div>
+
+    <div class="top-bar__controls">
+      <!-- Δ from Settle / Absolute toggle -->
+      <div class="mode-toggle" id="modeToggle" title="Toggle view mode">
+        <button class="mode-toggle__btn active" data-mode="delta">Δ FROM SETTLE</button>
+        <button class="mode-toggle__btn"        data-mode="absolute">ABSOLUTE</button>
+      </div>
+
+      <!-- Live / Disconnected pill -->
+      <div class="status-pill" id="statusPill">
+        <span class="status-pill__dot"></span>
+        <span class="status-pill__label" id="statusLabel">CONNECTING…</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       TAB BAR — one tab per market sheet
+       (populated by tabs.js after first data load)
+  ══════════════════════════════════════════════════════════════════════ -->
+  <nav class="tab-bar" id="tabBar">
+    <div class="tab-bar__loading">Loading markets…</div>
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       CHIP BAR — group filter chips within a market
+       Default | Out | spread | Fly | Dfly | …
+       (populated by chips.js when a market is selected)
+  ══════════════════════════════════════════════════════════════════════ -->
+  <nav class="chip-bar" id="chipBar">
+    <!-- chips injected by chips.js -->
+  </nav>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       MAIN PANEL
+  ══════════════════════════════════════════════════════════════════════ -->
+  <main class="main-panel" id="mainPanel">
+
+    <!-- Full-screen loading overlay (shown until first data arrives) -->
+    <div class="panel-loading" id="panelLoading">
+      <div class="spinner"></div>
+      <p>Loading market data…</p>
+    </div>
+
+    <!-- Full-screen error panel (fatal connection failure) -->
+    <div class="panel-error hidden" id="panelError">
+      <p class="panel-error__icon">⚠</p>
+      <p class="panel-error__text" id="panelErrorText">No data</p>
+    </div>
+
+    <!-- ── Strategy grid + Ratio table row ── -->
+    <div class="content-row hidden" id="contentRow">
+
+      <!-- Left: drag-and-drop strategy card grid -->
+      <section class="strategy-section" id="strategyGrid">
+        <div class="grid-container" id="gridContainer">
+          <!-- Cards injected by grid.js -->
+        </div>
+      </section>
+
+      <!-- Right: ratio table sidebar -->
+      <aside class="table-section" id="tableSection">
+        <div class="section-label">RATIO TABLE</div>
+        <div class="ratio-table-wrap">
+          <table class="ratio-table" id="ratioTable">
+            <!--<thead>
+              <tr>
+                <th>STRATEGY</th>
+                <th>FRONT</th>
+                <th>Δ</th>
+                <th>HI</th>
+                <th>LO</th>
+              </tr>
+            </thead>-->
+            <tbody id="ratioTableBody">
+              <!-- Rows injected by table.js -->
+            </tbody>
+          </table>
+        </div>
+      </aside>
+
+    </div><!-- /content-row -->
+    <div class="hidden" id="overviewPanel"></div>
+  </main><!-- /main-panel -->
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       FOCUS MODAL — expanded single-strategy view
+       Opened by clicking a card or table row.  Esc / click-outside to close.
+  ══════════════════════════════════════════════════════════════════════ -->
+  <div class="focus-overlay hidden" id="focusOverlay">
+    <div class="focus-modal" id="focusModal">
+      <div class="focus-modal__header">
+        <span class="focus-modal__title" id="focusTitle">—</span>
+        <button class="focus-modal__close" id="focusClose" title="Close (Esc)">✕</button>
+      </div>
+      <div class="focus-modal__body">
+        <svg class="focus-svg" id="focusSvg"></svg>
+      </div>
+      <div class="focus-modal__stats" id="focusStats"></div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════════════════════════════
+       JS MODULES
+       Only app.js is loaded here — it imports everything else.
+       state.js is also loaded independently so it initialises first.
+  ══════════════════════════════════════════════════════════════════════ -->
+  <script type="module" src="/static/js/state.js"></script>
+  <script type="module" src="/static/js/app.js"></script>
+  <div id="chartTooltip" class="chart-tooltip"></div>
+</body>
+</html>

@@ -1,0 +1,172 @@
+/*
+ * static/css/chart.css — Strategy Card & Mini-Chart Styles  [PREMIUM v4]
+ */
+
+/* ── Card base ───────────────────────────────────────────────────────────── */
+.strategy-card {
+  background: var(--bg-raised);
+  border: 1px solid var(--border-dim);        /* v4: was border-subtle — more visible edge */
+  border-radius: var(--r-md);
+  padding: 0;
+  cursor: pointer;
+  transition:
+    border-color var(--t-fast),
+    background var(--t-fast),
+    box-shadow var(--t-fast),
+    opacity var(--t-fast);
+  position: relative;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Subtle inner top-edge highlight for depth */
+.strategy-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg,
+    rgba(255,255,255,0.030) 0%,    /* v4: slightly brighter top sheen */
+    transparent 52px
+  );
+  pointer-events: none;
+  z-index: 1;
+}
+
+.strategy-card:hover {
+  border-color: var(--border-bright);
+  background: var(--bg-hover);
+  box-shadow:
+    0 8px 28px rgba(0,0,0,0.40),
+    inset 0 0 0 1px rgba(255,255,255,0.032);
+  z-index: 2;
+}
+.strategy-card {
+  transition:
+    border-color var(--t-fast),
+    background 0.08s ease,        /* was var(--t-fast) on all */
+    box-shadow var(--t-fast),
+    opacity var(--t-fast);
+}
+/* highlighted = hovered-from-table */
+.strategy-card--highlighted {
+  border-color: var(--accent-dim);
+  background: var(--bg-hover);
+  box-shadow:
+    0 0 0 1px var(--accent-dim),
+    inset 0 0 28px rgba(212,138,14,0.07);    /* v4: accent-matched glow */
+}
+
+.strategy-card--dragging {
+  opacity: 0.28;
+  border-color: var(--border-bright);
+  cursor: grabbing;
+}
+
+.strategy-card--drag-over {
+  border-color: var(--accent);
+  background: var(--bg-active);
+  box-shadow: inset 0 0 0 1px var(--accent);
+}
+
+/* hidden DOM header — name is SVG overlay */
+.card-header { display: none; }
+.card-name   { display: none; }
+.card-marker { display: none; }
+
+/* ── SVG chart — fills card ─────────────────────────────────────────────── */
+.card-chart {
+  flex: 1 1 0;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  display: block;
+  overflow: visible;
+}
+
+.card-stats { display: none; }
+.card-range { display: none; }
+
+/* ── SVG classes ────────────────────────────────────────────────────────── */
+.chart-band        { fill: var(--col-range); }
+.chart-hl-line     { fill: none; stroke: var(--col-range-line); stroke-width: 0.6; }
+.chart-settle-line { fill: none; stroke: var(--col-settle); stroke-width: 0.8; stroke-dasharray: 4 4; }
+.chart-live-line   { fill: none; stroke: var(--col-live); stroke-width: 1.4; stroke-linejoin: round; stroke-linecap: round; }
+.chart-zero-line   { stroke: var(--col-zero); stroke-width: 0.8; }
+.chart-dot         { fill: var(--col-live); transition: r var(--t-normal); }
+
+.card-chart text,
+.card-chart path,
+.card-chart line,
+.card-chart circle,
+.card-chart polygon {
+  pointer-events: none;
+}
+
+.chart-fixed-markers {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.chart-fixed-marker {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border: 1px solid var(--marker-stroke, var(--col-live));
+  border-radius: 50%;
+  background: var(--marker-fill, var(--bg-raised));
+  transform: translate(-50%, -50%);
+  box-sizing: border-box;
+  pointer-events: none;
+}
+
+/* ── Sort arrows ────────────────────────────────────────────────────────── */
+.sort-arrow {
+  font-size: 8px;
+  color: var(--accent);
+  margin-left: 2px;
+}
+
+/* ── Tooltip ────────────────────────────────────────────────────────────── */
+.chart-tooltip {
+  position: fixed;
+  z-index: 9999;
+  pointer-events: none;
+  background: var(--bg-void);                /* v4: deeper bg for max contrast */
+  border: 1px solid var(--border-bright);    /* v4: more visible border */
+  border-radius: var(--r-md);
+  padding: 8px 12px;
+  font-family: var(--font-data);
+  font-size: 10px;
+  line-height: 1.65;
+  color: var(--text-primary);               /* v4: full primary brightness */
+  white-space: nowrap;
+  display: none;
+  transform: translate(14px, -50%);
+  box-shadow:
+    0 12px 32px rgba(0,0,0,0.50),           /* v4: deeper shadow for lift */
+    0 0 0 1px rgba(255,255,255,0.04);
+}
+
+.chart-tooltip b {
+  font-weight: 700;
+  color: var(--accent-bright);
+  display: block;
+  margin-bottom: 4px;
+  font-size: 8.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.chart-tooltip {
+  background: rgba(var(--bg-void-rgb), 0.82);   /* if you have RGB vars */
+  
+}
+/* ── X-axis tick visibility — ensure marks are rendered at full saturation ── */
+/* (SVG tick opacity is now controlled in chart.js with higher floor values)  */

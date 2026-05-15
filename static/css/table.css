@@ -1,0 +1,114 @@
+/*
+ * static/css/table.css — Ratio Table Styles  [REFINED v2]
+ */
+
+.table-section {
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.ratio-table-wrap {
+  flex: 1 1 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-dim) transparent;
+}
+.ratio-table-wrap::-webkit-scrollbar       { width: 2px; }
+.ratio-table-wrap::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 2px; }
+
+/* ── Table base ──────────────────────────────────────────────────────────── */
+.ratio-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+/* ── Header ──────────────────────────────────────────────────────────────── */
+.ratio-table thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+.ratio-table th {
+  background: var(--bg-deep);
+  padding: 5px var(--sp-2);
+  text-align: right;
+  font-family: var(--font-ui);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-semi);
+  letter-spacing: 0.10em;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border-dim);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  transition: color var(--t-fast);
+}
+.ratio-table th:hover { color: var(--text-secondary); }
+
+.ratio-table th:first-child,
+.ratio-table td:first-child {
+  text-align: left;
+  padding-left: var(--sp-2);
+}
+
+.ratio-table th:nth-child(1) { width: 30%; }
+.ratio-table th:nth-child(2) { width: 23%; }
+.ratio-table th:nth-child(3) { width: 23%; }
+.ratio-table th:nth-child(4) { width: 24%; }
+
+/* ── Data rows ───────────────────────────────────────────────────────────── */
+.ratio-table td {
+  padding: 4px var(--sp-2);
+  font-family: var(--font-data);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-light);
+  color: var(--text-secondary);
+  text-align: right;
+  border-bottom: 1px solid var(--border-subtle);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ratio-table td:first-child {
+  font-family: var(--font-data);
+  font-size: var(--fs-2xs);
+  font-weight: var(--fw-medium);
+  letter-spacing: 0.04em;
+  color: var(--text-primary);
+}
+
+.ratio-table tbody tr:hover td {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.ratio-table tbody tr.row--highlighted td {
+  background: var(--bg-active);
+  color: var(--text-primary);
+}
+
+.ratio-table tbody tr.row--highlighted td:first-child {
+  color: var(--accent-bright);
+}
+
+/* Even row stripe — extremely subtle */
+.ratio-table tbody tr:nth-child(even) td {
+  background: rgba(255,255,255,0.008);
+}
+.ratio-table tbody tr:nth-child(even):hover td,
+.ratio-table tbody tr:nth-child(even).row--highlighted td {
+  background: var(--bg-hover);
+}
+
+/* Delta colours */
+.ratio-table td.pos { color: var(--col-pos); }
+.ratio-table td.neg { color: var(--col-neg); }
+.ratio-table td.neu { color: var(--text-dim); }
+.ratio-table td.null-val { color: var(--text-dim); }
