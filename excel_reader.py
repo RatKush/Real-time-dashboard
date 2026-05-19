@@ -47,7 +47,7 @@ from ratio_reader import get_ratios as _parse_ratios_from_sheets
 
 # ── Platform guard for win32com / pythoncom ───────────────────────────────────
 
-_WIN32_AVAILABLE = sys.platform == "win32"
+_WIN32_AVAILABLE =  sys.platform == "win32"
 if _WIN32_AVAILABLE:
     try:
         import win32com.client as _win32

@@ -531,8 +531,8 @@
 }
 
 .ov-dp--sim {
-  min-width: 185px;
-  flex: 0.75 1 185px;
+  min-width: 180px;
+  flex: 0.75 1 180px;
 }
 
 .ov-dp--meeting-total {
