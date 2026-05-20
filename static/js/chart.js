@@ -67,7 +67,10 @@ export function renderMiniChart(svgEl, strategy, mode) {
     return;
   }
 
-  const pts = modePoints(points, mode);
+  const pts = modePoints(points, mode, {
+    strategyName: strategy.name,
+    market: STATE.get('activeMarket'),
+  });
   const n   = pts.length;
 
   // ── Y domain ──────────────────────────────────────────────────────────────

@@ -52,19 +52,31 @@ export function nearExtreme(live, allLives) {
 
 // ── View-mode transform ───────────────────────────────────────────────────────
 
-export function modePoint(pt, mode) {
+export function modePoint(pt, mode, ctx = {}) {
   if (mode !== 'delta') return { live: pt.live, settle: pt.settle, high: pt.high, low: pt.low };
   const s = pt.settle ?? 0;
+  const mult = _deltaDisplayMultiplier(ctx);
   return {
-    live:   pt.live   != null ? pt.live   - s : null,
+    live:   pt.live   != null ? (pt.live   - s) * mult : null,
     settle: 0,
-    high:   pt.high   != null ? pt.high   - s : null,
-    low:    pt.low    != null ? pt.low    - s : null,
+    high:   pt.high   != null ? (pt.high   - s) * mult : null,
+    low:    pt.low    != null ? (pt.low    - s) * mult : null,
   };
 }
 
-export function modePoints(points, mode) {
-  return points.map(pt => modePoint(pt, mode));
+export function modePoints(points, mode, ctx = {}) {
+  return points.map(pt => modePoint(pt, mode, ctx));
+}
+
+export function deltaDisplayMultiplier(ctx = {}) {
+  return _deltaDisplayMultiplier(ctx);
+}
+
+function _deltaDisplayMultiplier(ctx = {}) {
+  const strategyName = String(ctx.strategyName || ctx.name || '');
+  const market = String(ctx.market || STATE.get('activeMarket') || '').toUpperCase();
+  if (strategyName === 'Out' && market !== 'SZI0') return 100;
+  return 1;
 }
 
 
