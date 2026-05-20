@@ -422,6 +422,10 @@ body {
     display: none !important;
   }
 
+  .table-resizer {
+    display: none !important;
+  }
+
   .content-row {
     overflow-y: auto;
     overflow-x: hidden;
@@ -453,7 +457,7 @@ body {
 
 /* Contract chain table sidebar */
 .table-section {
-  width: 196px;
+  width: clamp(320px, 28vw, 430px);
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
@@ -462,7 +466,8 @@ body {
 }
 
 @media (max-width: 880px) {
-  .table-section { display: none !important; }
+  .table-section,
+  .table-resizer { display: none !important; }
 }
 
 #ratioTable th:nth-child(1),

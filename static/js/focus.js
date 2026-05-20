@@ -17,7 +17,7 @@
  */
 
 import STATE from './state.js';
-import { modePoints, toY, toX, ptsToPath, getActiveStrategies } from './utils.js';
+import { modePoints, toY, toX, ptsToPath, getActiveStrategies, deltaDisplayMultiplier } from './utils.js';
 import { fmtPrice, fmtDelta, deltaClass } from './utils.js';
 
 const overlay  = document.getElementById('focusOverlay');
@@ -112,7 +112,9 @@ function _renderChart(strategy, mode) {
   const points = strategy.points || [];
   if (!points.length) { _noData(); return; }
 
-  const pts = modePoints(points, mode);
+  const market = STATE.get('activeMarket');
+  const deltaMult = deltaDisplayMultiplier({ strategyName: strategy.name, market });
+  const pts = modePoints(points, mode, { strategyName: strategy.name, market });
   const n   = pts.length;
 
   const W = svgEl.clientWidth  || 1200;
@@ -489,7 +491,7 @@ function _renderChart(strategy, mode) {
     if (p.live == null) return;
 
     const y      = yPx(p.live);
-    const val    = mode === 'delta' ? rawPt?.delta : rawPt?.live;
+    const val    = mode === 'delta' ? (rawPt?.delta != null ? rawPt.delta * deltaMult : null) : rawPt?.live;
     const isNeg  = (val ?? 0) < 0;
     const isHiPt = Math.abs(p.live - hiVal) < 0.0001;
     const isLoPt = Math.abs(p.live - loVal) < 0.0001 && n > 1;
@@ -771,9 +773,14 @@ function _ensureTooltip() {
 // fix 7: bigger font, better layout
 function _showTooltip(cx, cy, rawPt) {
   const tip   = _ensureTooltip();
-  const dCls  = deltaClass(rawPt.delta);
+  const deltaMult = deltaDisplayMultiplier({
+    strategyName: overlay?.dataset.openStrategy,
+    market: STATE.get('activeMarket'),
+  });
+  const displayDelta = rawPt.delta != null ? rawPt.delta * deltaMult : null;
+  const dCls  = deltaClass(displayDelta);
   const dClr  = dCls === 'pos' ? 'var(--col-pos)' : dCls === 'neg' ? 'var(--col-neg)' : 'var(--text-secondary)';
-  const dSign = rawPt.delta != null && rawPt.delta >= 0 ? '+' : '';
+  const dSign = displayDelta != null && displayDelta >= 0 ? '+' : '';
   const liveV = rawPt.live ?? 0;
   const liveClr = liveV < 0 ? 'var(--col-neg)' : 'var(--col-pos)';
 
@@ -805,7 +812,7 @@ function _showTooltip(cx, cy, rawPt) {
       <span style="color:var(--text-secondary);font-weight:500;font-size:13px;">${fmt2(rawPt.settle)}</span>
 
       <span style="color:var(--text-dim);font-size:9.5px;letter-spacing:0.08em;text-transform:uppercase;">Delta</span>
-      <span style="color:${dClr};font-weight:700;font-size:14px;">${dSign}${fmt2(rawPt.delta)}</span>
+      <span style="color:${dClr};font-weight:700;font-size:14px;">${dSign}${fmt2(displayDelta)}</span>
     </div>
   `;
 

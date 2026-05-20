@@ -1,11 +1,46 @@
 /*
- * static/css/table.css — Ratio Table Styles  [REFINED v2]
+ * static/css/table.css - Signal engine sidebar
  */
 
 .table-section {
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  min-height: 0;
+  min-width: 280px;
+  max-width: 640px;
+}
+
+.table-resizer {
+  width: 7px;
+  flex: 0 0 7px;
+  align-self: stretch;
+  cursor: col-resize;
+  position: relative;
+  margin: 0 -5px 0 -2px;
+  z-index: 4;
+}
+
+.table-resizer::before {
+  content: '';
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  left: 3px;
+  width: 1px;
+  background: var(--border-dim);
+  transition: background var(--t-fast), box-shadow var(--t-fast);
+}
+
+.table-resizer:hover::before,
+.resizing-table .table-resizer::before {
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent-glow);
+}
+
+.resizing-table {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .ratio-table-wrap {
@@ -14,101 +49,219 @@
   overflow-x: hidden;
   scrollbar-width: thin;
   scrollbar-color: var(--border-dim) transparent;
-}
-.ratio-table-wrap::-webkit-scrollbar       { width: 2px; }
-.ratio-table-wrap::-webkit-scrollbar-thumb { background: var(--border-dim); border-radius: 2px; }
-
-/* ── Table base ──────────────────────────────────────────────────────────── */
-.ratio-table {
-  width: 100%;
-  border-collapse: collapse;
-  table-layout: fixed;
+  min-height: 0;
 }
 
-/* ── Header ──────────────────────────────────────────────────────────────── */
-.ratio-table thead {
-  position: sticky;
-  top: 0;
-  z-index: 2;
+.ratio-table-wrap::-webkit-scrollbar { width: 3px; }
+.ratio-table-wrap::-webkit-scrollbar-thumb {
+  background: var(--border-dim);
+  border-radius: 3px;
 }
 
-.ratio-table th {
-  background: var(--bg-deep);
-  padding: 5px var(--sp-2);
-  text-align: right;
+.sig-engine {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  min-height: 0;
+  padding-right: 1px;
+}
+
+.sig-panel {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.026), rgba(255,255,255,0.006)),
+    color-mix(in srgb, var(--bg-deep) 82%, black 6%);
+  border: 1px solid color-mix(in srgb, var(--border-dim) 86%, white 5%);
+  border-radius: 5px;
+  padding: 7px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.025);
+}
+
+.sig-panel-h {
   font-family: var(--font-ui);
-  font-size: var(--fs-2xs);
-  font-weight: var(--fw-semi);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  color: var(--accent-bright);
+  text-transform: uppercase;
+  padding-bottom: 6px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sig-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sig-state-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.sig-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  min-height: 17px;
+  border-bottom: 1px solid rgba(255,255,255,0.025);
+}
+
+.sig-row:last-child {
+  border-bottom: none;
+}
+
+.sig-row span {
+  font-family: var(--font-ui);
+  font-size: 7.5px;
+  font-weight: 700;
   letter-spacing: 0.10em;
   color: var(--text-dim);
-  border-bottom: 1px solid var(--border-dim);
+  text-transform: uppercase;
   white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
-  transition: color var(--t-fast);
-}
-.ratio-table th:hover { color: var(--text-secondary); }
-
-.ratio-table th:first-child,
-.ratio-table td:first-child {
-  text-align: left;
-  padding-left: var(--sp-2);
 }
 
-.ratio-table th:nth-child(1) { width: 30%; }
-.ratio-table th:nth-child(2) { width: 23%; }
-.ratio-table th:nth-child(3) { width: 23%; }
-.ratio-table th:nth-child(4) { width: 24%; }
-
-/* ── Data rows ───────────────────────────────────────────────────────────── */
-.ratio-table td {
-  padding: 4px var(--sp-2);
+.sig-row b {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-family: var(--font-data);
-  font-size: var(--fs-2xs);
-  font-weight: var(--fw-light);
-  color: var(--text-secondary);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0;
   text-align: right;
-  border-bottom: 1px solid var(--border-subtle);
+}
+
+.sig-row--em b {
+  color: var(--text-primary);
+  font-size: 10.5px;
+}
+
+.sig-gauge {
+  height: 4px;
+  background: color-mix(in srgb, var(--bg-void) 88%, white 4%);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-top: 7px;
+}
+
+.sig-gauge i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--col-pos), var(--accent), var(--col-neg));
+  box-shadow: 0 0 10px rgba(212,138,14,0.24);
+}
+
+.sig-trades {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.sig-trade {
+  border: 1px solid color-mix(in srgb, var(--border-dim) 90%, white 6%);
+  border-left: 2px solid var(--accent);
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--bg-raised) 78%, black 8%);
+  padding: 6px;
   cursor: pointer;
-  transition: background var(--t-fast), color var(--t-fast);
+  transition: background var(--t-fast), border-color var(--t-fast), box-shadow var(--t-fast);
+}
+
+.sig-trade:hover,
+.sig-trade:focus-visible {
+  background: var(--bg-hover);
+  border-color: color-mix(in srgb, var(--accent) 56%, var(--border-dim));
+  box-shadow: 0 0 0 1px rgba(240,168,40,0.14);
+  outline: none;
+}
+
+.trade-head,
+.trade-metrics {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 7px;
+}
+
+.trade-name {
+  font-family: var(--font-ui);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  line-height: 1.25;
+  color: var(--text-primary);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.trade-dir {
+  font-family: var(--font-data);
+  font-size: 11px;
+  font-weight: 900;
+  letter-spacing: 0.07em;
+  color: var(--accent-bright);
+  background: rgba(212,138,14,0.11);
+  border: 1px solid color-mix(in srgb, var(--accent) 52%, var(--border-dim));
+  border-radius: 3px;
+  padding: 2px 5px;
+  min-width: 58px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.trade-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 4px;
+  gap: 3px;
+}
+
+.trade-metrics span {
+  font-family: var(--font-data);
+  font-size: 8px;
+  font-weight: 800;
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.025);
+  border: 1px solid var(--border-subtle);
+  border-radius: 3px;
+  padding: 2px 4px;
+  white-space: nowrap;
+  text-align: right;
+}
+
+.trade-why {
+  margin-top: 4px;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: 8.2px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  line-height: 1.35;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.ratio-table td:first-child {
-  font-family: var(--font-data);
-  font-size: var(--fs-2xs);
-  font-weight: var(--fw-medium);
-  letter-spacing: 0.04em;
-  color: var(--text-primary);
+.sig-empty {
+  padding: 12px 8px;
+  color: var(--text-dim);
+  font-family: var(--font-ui);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-align: center;
+  text-transform: uppercase;
+  border: 1px dashed var(--border-dim);
+  border-radius: 4px;
 }
 
-.ratio-table tbody tr:hover td {
-  background: var(--bg-hover);
-  color: var(--text-primary);
-}
-
-.ratio-table tbody tr.row--highlighted td {
-  background: var(--bg-active);
-  color: var(--text-primary);
-}
-
-.ratio-table tbody tr.row--highlighted td:first-child {
-  color: var(--accent-bright);
-}
-
-/* Even row stripe — extremely subtle */
-.ratio-table tbody tr:nth-child(even) td {
-  background: rgba(255,255,255,0.008);
-}
-.ratio-table tbody tr:nth-child(even):hover td,
-.ratio-table tbody tr:nth-child(even).row--highlighted td {
-  background: var(--bg-hover);
-}
-
-/* Delta colours */
-.ratio-table td.pos { color: var(--col-pos); }
-.ratio-table td.neg { color: var(--col-neg); }
-.ratio-table td.neu { color: var(--text-dim); }
-.ratio-table td.null-val { color: var(--text-dim); }
+.sig-engine .pos { color: var(--col-pos); }
+.sig-engine .neg { color: var(--col-neg); }
+.sig-engine .neu { color: var(--text-secondary); }

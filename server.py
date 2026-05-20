@@ -13,6 +13,29 @@ or with gunicorn:
     gunicorn -w 1 -b 0.0.0.0:5000 server:app
 """
 
+import os
+import sys
+
+
+def _ensure_venv_python_for_excel_com() -> None:
+    if os.name != "nt":
+        return
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    venv_python = os.path.join(base_dir, ".venv", "Scripts", "python.exe")
+    if not os.path.exists(venv_python):
+        return
+    if os.path.abspath(sys.executable).lower() == os.path.abspath(venv_python).lower():
+        return
+    try:
+        import pythoncom  # noqa: F401
+        import win32com.client  # noqa: F401
+        return
+    except ImportError:
+        os.execv(venv_python, [venv_python, *sys.argv])
+
+
+_ensure_venv_python_for_excel_com()
+
 from flask import Flask, render_template
 
 from api.data_api import data_bp          # Excel data blueprint
