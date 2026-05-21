@@ -22,14 +22,23 @@ Rules:
        3×S1 − 2×S1(n+1)   weights: [3, -2]
      S3, S6, L3, L6
 
-  ── Group B  {VIX, VOXX, SR1, ZQ}:
+  ── Group B1 {SR1, ZQ}:
      Out
      S1-ratio variants:
        1×S1 − 2×S1(n+1)   weights: [1, -3, 2]
        2×S1 − 1×S1(n+1)   weights: [2, -3, 1]
        2×S1 − 3×S1(n+1)   weights: [2, -3]
        3×S1 − 2×S1(n+1)   weights: [3, -2]
-     S3, S6, L3, L6, D3, D6
+     S3, S6, L3, L6
+
+  ── Group B2 {VIX, VOXX}:
+     Out
+     S1-ratio variants:
+       1×S1 − 2×S1(n+1)   weights: [1, -3, 2]
+       2×S1 − 1×S1(n+1)   weights: [2, -3, 1]
+       2×S1 − 3×S1(n+1)   weights: [2, -3]
+       3×S1 − 2×S1(n+1)   weights: [3, -2]
+     S3, L3, D3
 
   ── Inter group  {markets added dynamically}:
      Default strategies: S3, S6, S12, L6, L12
@@ -48,8 +57,11 @@ from typing import List, Dict, Optional
 # Group A — out ratio + s1 ratio + spread variants
 _GROUP_A_MARKETS = {"EMP", "MPC", "SZI0"}
 
-# Group B — short-end outright / s1 ratio / spread / calendar
-_GROUP_B_MARKETS = {"VIX", "VOXX", "SR1", "ZQ"}
+# Group B1 - short-end default set
+_GROUP_B1_MARKETS = {"SR1", "ZQ"}
+
+# Group B2 - vol default set
+_GROUP_B2_MARKETS = {"VIX", "VOXX"}
 
 # Inter group — inter-market strategies with dynamic "Name vs Name" labelling
 # Add markets here as they are introduced
@@ -113,8 +125,11 @@ def get_default_strategies(
     if mkt_upper in _GROUP_A_MARKETS:
         return _build_group_a(ratio_by_name)
 
-    if mkt_upper in _GROUP_B_MARKETS:
-        return _build_group_b(ratio_by_name)
+    if mkt_upper in _GROUP_B1_MARKETS:
+        return _build_group_b1(ratio_by_name)
+
+    if mkt_upper in _GROUP_B2_MARKETS:
+        return _build_group_b2(ratio_by_name)
 
     if mkt_upper in _INTER_MARKETS:
         return _build_inter(ratio_by_name)
@@ -180,21 +195,36 @@ def _build_group_a(ratio_by_name: Dict[str, dict]) -> List[dict]:
     result = _lookup_names(["Out"], ratio_by_name)
     result.extend(_lookup_names(["S3", "S6", "L3"], ratio_by_name))
     result.extend(_OUT_RATIO_EXTRA)
-    result.extend(_S1_RATIO_EXTRA)
+    #result.extend(_S1_RATIO_EXTRA)
     return result
 
 
-def _build_group_b(ratio_by_name: Dict[str, dict]) -> List[dict]:
+def _build_group_b1(ratio_by_name: Dict[str, dict]) -> List[dict]:
     """
-    Default chip for Group B markets (VIX, VOXX, SR1, ZQ).
+    Default chip for Group B1 markets (SR1, ZQ).
 
     Order:
       1. Out                    (from ratio_bg)
       2. S1-ratio variants      (inline: 1×S1−2×S1, 2×S1−1×S1, 2×S1−3×S1, 3×S1−2×S1)
-      3. S3, S6, L3, L6, D3, D6 (from ratio_bg)
+      3. S3, S6, L3, L6         (from ratio_bg)
     """
     result = _lookup_names(["Out"], ratio_by_name)
-    result.extend(_lookup_names(["S3", "S6", "L3", "L6", "D3"], ratio_by_name))
+    result.extend(_lookup_names(["S3", "S6", "L3", "L6"], ratio_by_name))
+    result.extend(_S1_RATIO_EXTRA)
+    return result
+
+
+def _build_group_b2(ratio_by_name: Dict[str, dict]) -> List[dict]:
+    """
+    Default chip for Group B2 markets (VIX, VOXX).
+
+    Order:
+      1. Out                    (from ratio_bg)
+      2. S1-ratio variants
+      3. S3, L3, D3             (from ratio_bg)
+    """
+    result = _lookup_names(["Out"], ratio_by_name)
+    result.extend(_lookup_names(["S3", "L3", "D3"], ratio_by_name))
     result.extend(_S1_RATIO_EXTRA)
     return result
 

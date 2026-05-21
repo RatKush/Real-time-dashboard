@@ -25,11 +25,11 @@
  */
 
 import STATE from './state.js';
-import { modePoints, toY, toX, ptsToPath } from './utils.js';
+import { modePoints, toY, toX } from './utils.js';
 
 const W   = 400;
 const H   = 200;
-const PAD = { top: 20, right: 14, bottom: 24, left: 26 };   // v4: +2 bottom/left for label room
+const PAD = { top: 28, right: 8, bottom: 34, left: 26 };
 
 const tooltipEl = document.getElementById('chartTooltip');
 
@@ -58,9 +58,6 @@ export function renderMiniChart(svgEl, strategy, mode) {
   clip.appendChild(clipRect);
   defs0.appendChild(clip);
   svgEl.appendChild(defs0);
-
-  // Name badge
-  _nameOverlay(svgEl, _displayName(strategy.name));
 
   if (!points.length) {
     _noDataLabel(svgEl, W / 2, H / 2);
@@ -91,18 +88,62 @@ export function renderMiniChart(svgEl, strategy, mode) {
   const baseLineY = PAD.top + cH;
 
   // ── X-axis baseline — v4: brighter stroke, wider ─────────────────────────
+  const plotBg = _el('rect');
+  plotBg.setAttribute('x', PAD.left.toString());
+  plotBg.setAttribute('y', PAD.top.toString());
+  plotBg.setAttribute('width', cW.toString());
+  plotBg.setAttribute('height', cH.toString());
+  plotBg.setAttribute('rx', '3');
+  plotBg.setAttribute('fill', 'rgba(255,255,255,0.010)');
+  svgEl.appendChild(plotBg);
+
+  if (mode === 'delta' && minV < 0 && maxV > 0) {
+    const zeroY = yPx(0);
+    const posTint = _el('rect');
+    posTint.setAttribute('x', PAD.left.toString());
+    posTint.setAttribute('y', PAD.top.toString());
+    posTint.setAttribute('width', cW.toString());
+    posTint.setAttribute('height', Math.max(0, zeroY - PAD.top).toFixed(1));
+    posTint.setAttribute('fill', 'rgba(74,184,104,0.026)');
+    posTint.setAttribute('clip-path', `url(#${clipId})`);
+    svgEl.appendChild(posTint);
+
+    const negTint = _el('rect');
+    negTint.setAttribute('x', PAD.left.toString());
+    negTint.setAttribute('y', zeroY.toFixed(1));
+    negTint.setAttribute('width', cW.toString());
+    negTint.setAttribute('height', Math.max(0, PAD.top + cH - zeroY).toFixed(1));
+    negTint.setAttribute('fill', 'rgba(196,72,72,0.026)');
+    negTint.setAttribute('clip-path', `url(#${clipId})`);
+    svgEl.appendChild(negTint);
+  }
+
+  pts.forEach((p, i) => {
+    const x = xPx(i);
+    const vg = _el('line');
+    vg.setAttribute('x1', x.toFixed(1));
+    vg.setAttribute('x2', x.toFixed(1));
+    vg.setAttribute('y1', PAD.top.toString());
+    vg.setAttribute('y2', (PAD.top + cH).toString());
+    vg.setAttribute('stroke', 'rgba(174,194,214,0.10)');
+    vg.setAttribute('stroke-width', i === 0 || i === n - 1 ? '0.65' : '0.45');
+    vg.setAttribute('opacity', i === 0 || i === n - 1 ? '0.58' : '0.42');
+    svgEl.appendChild(vg);
+  });
+
   const axisLine = _el('line');
   axisLine.setAttribute('x1', PAD.left.toString());
   axisLine.setAttribute('x2', (PAD.left + cW).toString());
   axisLine.setAttribute('y1', baseLineY.toFixed(1));
   axisLine.setAttribute('y2', baseLineY.toFixed(1));
-  axisLine.setAttribute('stroke', 'var(--border-bright)');  // v4: was border-dim
-  axisLine.setAttribute('stroke-width', '1.0');              // v4: was 0.8
+  axisLine.setAttribute('stroke', 'rgba(174,194,214,0.26)');
+  axisLine.setAttribute('stroke-width', '0.7');
   svgEl.appendChild(axisLine);
 
   // ── Subtle grid lines (horizontal only) ──────────────────────────────────
   const ticks = _niceTicks(minV, maxV, 4);
   ticks.forEach(t => {
+    if (mode === 'delta' && Math.abs(t) < 0.0001) return;
     const y      = yPx(t);
     const isZero = Math.abs(t) < 0.0001;
     const gl     = _el('line');
@@ -110,12 +151,37 @@ export function renderMiniChart(svgEl, strategy, mode) {
     gl.setAttribute('x2', (PAD.left + cW).toString());
     gl.setAttribute('y1', y.toFixed(1));
     gl.setAttribute('y2', y.toFixed(1));
-    gl.setAttribute('stroke', isZero ? 'var(--col-zero)' : 'var(--grid-line)');
-    gl.setAttribute('stroke-width', isZero ? '1.4' : '0.9');  // v4: both bumped up
-    gl.setAttribute('opacity', isZero ? '1.0' : '0.80');      // v4: more visible
+    gl.setAttribute('stroke', isZero ? 'rgba(45,212,191,0.55)' : 'rgba(174,194,214,0.11)');
+    gl.setAttribute('stroke-width', isZero ? '1.0' : '0.55');
+    gl.setAttribute('opacity', isZero ? '0.56' : '0.42');
     if (isZero) gl.setAttribute('stroke-dasharray', '3 4');
     svgEl.appendChild(gl);
   });
+
+  if (mode === 'delta' && minV < 0 && maxV > 0) {
+    const zy = yPx(0);
+    const zlGlow = _el('line');
+    zlGlow.setAttribute('x1', PAD.left.toString());
+    zlGlow.setAttribute('x2', (PAD.left + cW).toString());
+    zlGlow.setAttribute('y1', zy.toFixed(1));
+    zlGlow.setAttribute('y2', zy.toFixed(1));
+    zlGlow.setAttribute('stroke', 'rgba(45,212,191,0.24)');
+    zlGlow.setAttribute('stroke-width', '4');
+    zlGlow.setAttribute('opacity', '0.16');
+    zlGlow.setAttribute('clip-path', `url(#${clipId})`);
+    svgEl.appendChild(zlGlow);
+
+    const zl = _el('line');
+    zl.setAttribute('x1', PAD.left.toString());
+    zl.setAttribute('x2', (PAD.left + cW).toString());
+    zl.setAttribute('y1', zy.toFixed(1));
+    zl.setAttribute('y2', zy.toFixed(1));
+    zl.setAttribute('stroke', 'rgba(126,232,225,0.58)');
+    zl.setAttribute('stroke-width', '1.05');
+    zl.setAttribute('stroke-dasharray', '4 4');
+    zl.setAttribute('clip-path', `url(#${clipId})`);
+    svgEl.appendChild(zl);
+  }
 
   // ── Hi/Lo band ────────────────────────────────────────────────────────────
   const hasHL = pts.some(p => p.high != null && p.low != null);
@@ -135,23 +201,23 @@ export function renderMiniChart(svgEl, strategy, mode) {
 
   // ── Settle line ───────────────────────────────────────────────────────────
   const settlePts = pts.map((p, i) => [xPx(i), p.settle != null ? yPx(p.settle) : null]);
-  const settleD   = ptsToPath(settlePts);
-  if (settleD) {
+  const settleD   = _smoothPath(settlePts);
+  if (mode !== 'delta' && settleD) {
     const path = _el('path');
     path.setAttribute('d', settleD);
     path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', 'var(--col-settle)');
-    path.setAttribute('stroke-width', '0.9');
-    path.setAttribute('stroke-dasharray', '3 4');
+    path.setAttribute('stroke', 'rgba(148,163,184,0.50)');
+    path.setAttribute('stroke-width', '0.85');
+    path.setAttribute('stroke-dasharray', '4 5');
     path.setAttribute('stroke-linejoin', 'round');
-    path.setAttribute('opacity', '0.65');
+    path.setAttribute('opacity', '0.54');
     path.setAttribute('clip-path', `url(#${clipId})`);
     svgEl.appendChild(path);
   }
 
   // ── Area fill under live curve ────────────────────────────────────────────
   const livePts = pts.map((p, i) => [xPx(i), p.live != null ? yPx(p.live) : null]);
-  const liveD   = ptsToPath(livePts);
+  const liveD   = _smoothPath(livePts);
 
   if (liveD) {
     const baseY      = (mode === 'delta' && minV <= 0 && maxV >= 0) ? yPx(0) : baseLineY;
@@ -168,8 +234,8 @@ export function renderMiniChart(svgEl, strategy, mode) {
       grad.setAttribute('id', gradId);
       grad.setAttribute('x1', '0'); grad.setAttribute('y1', '0');
       grad.setAttribute('x2', '0'); grad.setAttribute('y2', '1');
-      const s1 = _el('stop'); s1.setAttribute('offset', '0%');   s1.setAttribute('stop-color', 'var(--col-live)'); s1.setAttribute('stop-opacity', '0.22');  // v4: was 0.18
-      const s2 = _el('stop'); s2.setAttribute('offset', '45%');  s2.setAttribute('stop-color', 'var(--col-live)'); s2.setAttribute('stop-opacity', '0.09');  // v4: was 0.07
+      const s1 = _el('stop'); s1.setAttribute('offset', '0%');   s1.setAttribute('stop-color', 'var(--col-live)'); s1.setAttribute('stop-opacity', mode === 'delta' ? '0.070' : '0.050');
+      const s2 = _el('stop'); s2.setAttribute('offset', '45%');  s2.setAttribute('stop-color', 'var(--col-live)'); s2.setAttribute('stop-opacity', mode === 'delta' ? '0.030' : '0.020');
       const s3 = _el('stop'); s3.setAttribute('offset', '100%'); s3.setAttribute('stop-color', 'var(--col-live)'); s3.setAttribute('stop-opacity', '0.00');
       grad.appendChild(s1); grad.appendChild(s2); grad.appendChild(s3);
       defs.appendChild(grad);
@@ -187,8 +253,8 @@ export function renderMiniChart(svgEl, strategy, mode) {
     glow.setAttribute('d', liveD);
     glow.setAttribute('fill', 'none');
     glow.setAttribute('stroke', 'var(--col-live)');
-    glow.setAttribute('stroke-width', '4.0');
-    glow.setAttribute('opacity', '0.11');             // v4: was 0.07
+    glow.setAttribute('stroke-width', '2.4');
+    glow.setAttribute('opacity', '0.075');
     glow.setAttribute('stroke-linecap', 'round');
     glow.setAttribute('clip-path', `url(#${clipId})`);
     svgEl.appendChild(glow);
@@ -197,8 +263,8 @@ export function renderMiniChart(svgEl, strategy, mode) {
     const path = _el('path');
     path.setAttribute('d', liveD);
     path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', 'var(--col-live)');
-    path.setAttribute('stroke-width', '1.4');
+    path.setAttribute('stroke', 'rgba(224,246,255,0.96)');
+    path.setAttribute('stroke-width', '1.35');
     path.setAttribute('stroke-linejoin', 'round');
     path.setAttribute('stroke-linecap', 'round');
     path.setAttribute('clip-path', `url(#${clipId})`);
@@ -208,7 +274,7 @@ export function renderMiniChart(svgEl, strategy, mode) {
     const sharp = _el('path');
     sharp.setAttribute('d', liveD);
     sharp.setAttribute('fill', 'none');
-    sharp.setAttribute('stroke', 'var(--col-live)');
+    sharp.setAttribute('stroke', 'rgba(126,232,225,0.72)');
     sharp.setAttribute('stroke-width', '0.5');
     sharp.setAttribute('opacity', '0.40');
     sharp.setAttribute('stroke-linejoin', 'round');
@@ -230,18 +296,26 @@ export function renderMiniChart(svgEl, strategy, mode) {
     const raw  = points[i];
     const isHi = Math.abs(p.live - hiVal) < 0.0001;
     const isLo = Math.abs(p.live - loVal) < 0.0001 && n > 1;
-    const markerStroke = isHi ? 'var(--col-pos)' : isLo ? 'var(--col-neg)' : 'var(--col-live)';
-    const markerFill = isHi || isLo ? markerStroke : 'var(--bg-raised)';
-    _addFixedMarker(markerLayer, x, y, W, H, markerStroke, markerFill);
+    const isLatest = i === n - 1;
+    const prevLive = i > 0 ? pts[i - 1]?.live : null;
+    const nextLive = i < n - 1 ? pts[i + 1]?.live : null;
+    const isPeak = prevLive != null && nextLive != null && p.live > prevLive && p.live > nextLive;
+    const isTrough = prevLive != null && nextLive != null && p.live < prevLive && p.live < nextLive;
+    const markerStroke = isHi || isPeak ? 'var(--col-pos)' : isLo || isTrough ? 'var(--col-neg)' : 'var(--col-live)';
+    const markerFill = isHi || isLo || isPeak || isTrough ? markerStroke : 'var(--bg-raised)';
+    _addFixedMarker(markerLayer, x, y, W, H, markerStroke, markerFill, {
+      pivot: isHi || isLo || isPeak || isTrough,
+      latest: isLatest,
+    });
 
     // Outer glow ring on extrema — v4: more prominent
-    if (isHi || isLo) {
+    if (isHi || isLo || isPeak || isTrough) {
       const ring = _el('circle');
       ring.setAttribute('cx', x.toFixed(1));
       ring.setAttribute('cy', y.toFixed(1));
       ring.setAttribute('r', '4.5');
       ring.setAttribute('fill', 'none');
-      ring.setAttribute('stroke', isHi ? 'var(--col-pos)' : 'var(--col-neg)');
+      ring.setAttribute('stroke', isHi || isPeak ? 'var(--col-pos)' : 'var(--col-neg)');
       ring.setAttribute('stroke-width', '1.0');     // v4: was 0.8
       ring.setAttribute('opacity', '0');
       svgEl.appendChild(ring);
@@ -252,13 +326,33 @@ export function renderMiniChart(svgEl, strategy, mode) {
     dot.setAttribute('cx', x.toFixed(1));
     dot.setAttribute('cy', y.toFixed(1));
     dot.setAttribute('r', '3');
-    dot.setAttribute('fill',   isHi ? 'var(--col-pos)' : isLo ? 'var(--col-neg)' : 'var(--bg-raised)');
-    dot.setAttribute('stroke', isHi ? 'var(--col-pos)' : isLo ? 'var(--col-neg)' : 'var(--col-live)');
+    dot.setAttribute('fill',   isHi || isPeak ? 'var(--col-pos)' : isLo || isTrough ? 'var(--col-neg)' : 'var(--bg-raised)');
+    dot.setAttribute('stroke', isHi || isPeak ? 'var(--col-pos)' : isLo || isTrough ? 'var(--col-neg)' : 'var(--col-live)');
     dot.setAttribute('stroke-width', '1.5');
     dot.setAttribute('opacity', '0');
     svgEl.appendChild(dot);
 
+    if (isLatest) {
+      const latest = _el('circle');
+      latest.setAttribute('cx', x.toFixed(1));
+      latest.setAttribute('cy', y.toFixed(1));
+      latest.setAttribute('r', '5.2');
+      latest.setAttribute('fill', 'none');
+      latest.setAttribute('stroke', 'var(--col-live)');
+      latest.setAttribute('stroke-width', '1.1');
+      latest.setAttribute('opacity', '0');
+      latest.style.filter = 'drop-shadow(0 0 4px rgba(184,208,232,0.45))';
+      latest.style.pointerEvents = 'none';
+      svgEl.appendChild(latest);
+    }
+
 // ── Single mousemove overlay — snaps tooltip to nearest point ─────────────
+  });
+
+  const hoverMarker = _addFixedMarker(markerLayer, 0, 0, W, H, 'var(--col-live)', 'var(--bg-raised)', {
+    hover: true,
+  });
+
   const overlay = _el('rect');
   overlay.setAttribute('x',      PAD.left.toString());
   overlay.setAttribute('y',      PAD.top.toString());
@@ -326,9 +420,12 @@ export function renderMiniChart(svgEl, strategy, mode) {
     crosshair.setAttribute('x2',      pt.x.toFixed(1));
     crosshair.setAttribute('opacity', '0.6');
 
-    snapDot.setAttribute('cx',      pt.x.toFixed(1));
-    snapDot.setAttribute('cy',      pt.y.toFixed(1));
-    snapDot.setAttribute('opacity', '1');
+    snapDot.setAttribute('opacity', '0');
+    if (hoverMarker) {
+      hoverMarker.style.left = `${(pt.x / W) * 100}%`;
+      hoverMarker.style.top = `${(pt.y / H) * 100}%`;
+      hoverMarker.style.opacity = '1';
+    }
 
     const rawLive   = pt.raw?.live;
     const rawSettle = pt.raw?.settle;
@@ -343,8 +440,8 @@ export function renderMiniChart(svgEl, strategy, mode) {
   overlay.addEventListener('mouseleave', () => {
     crosshair.setAttribute('opacity', '0');
     snapDot.setAttribute('opacity',   '0');
+    if (hoverMarker) hoverMarker.style.opacity = '0';
     _hideTooltip();
-  });
   });
 
 if (STATE.get('showChartLabels')) {
@@ -354,19 +451,25 @@ if (STATE.get('showChartLabels')) {
     const n2 = pts.length;
     pts.forEach((p, i) => {
       if (p.live == null) return;
-      const isFirst = i === 0;
       const isLast  = i === n2 - 1;
       const isHi    = Math.abs(p.live - hiVal) < 0.0001;
       const isLo    = Math.abs(p.live - loVal) < 0.0001 && n2 > 1;
-      if (!isFirst && !isLast && !isHi && !isLo) return;
+      const prev = i > 0 ? pts[i - 1]?.live : null;
+      const next = i < n2 - 1 ? pts[i + 1]?.live : null;
+      const isPeak = prev != null && next != null && p.live > prev && p.live > next;
+      const isTrough = prev != null && next != null && p.live < prev && p.live < next;
+      if (i > 0 && prev != null && Math.abs(p.live - prev) < 0.0001) return;
+      if (!isLast && !isHi && !isLo && !isPeak && !isTrough) return;
 
       const x   = xPx(i);
       const y   = yPx(p.live);
+      const forceAbove = isPeak || isHi;
+      const forceBelow = isTrough || isLo;
       const isUpper = y < PAD.top + cH * 0.5;
-      const ly  = isUpper ? y - 8 : y + 8;
-      const lx  = isFirst ? x + 2 : isLast ? x - 2 : x;
-      const anchor = isFirst ? 'start' : isLast ? 'end' : 'middle';
-      const col = isHi ? 'var(--col-pos)' : isLo ? 'var(--col-neg)' : 'var(--text-secondary)';
+      const ly  = forceAbove ? y - 9 : forceBelow ? y + 9 : isUpper ? y + 8 : y - 8;
+      const lx  = isLast ? x - 2 : x;
+      const anchor = isLast ? 'end' : 'middle';
+      const col = isHi || isPeak ? 'var(--col-pos)' : isLo || isTrough ? 'var(--col-neg)' : 'var(--text-secondary)';
 
       const lbl = _el('text');
       lbl.setAttribute('x', lx.toFixed(1));
@@ -385,6 +488,7 @@ if (STATE.get('showChartLabels')) {
 
   // ── Y-axis tick labels — v4: brighter ────────────────────────────────────
   ticks.forEach(t => {
+    if (mode === 'delta' && Math.abs(t) < 0.0001) return;
     const y     = yPx(t);
     const isNeg = t < -0.0001;
     const col   = isNeg ? 'var(--col-neg)' : 'var(--text-secondary)';
@@ -397,7 +501,7 @@ if (STATE.get('showChartLabels')) {
     txt.setAttribute('font-family', 'var(--font-data)');
     txt.setAttribute('font-size', '7.5');
     txt.setAttribute('fill', col);
-    txt.setAttribute('opacity', '0.90');                // v4: was 0.80
+    txt.setAttribute('opacity', '0.52');
     txt.textContent = Math.abs(_fmtTick(t));
     svgEl.appendChild(txt);
   });
@@ -415,9 +519,9 @@ if (STATE.get('showChartLabels')) {
     tick.setAttribute('y2', (baseLineY + 6.5).toFixed(1));  // v4: taller (was +5.5)
     // v4: opacity range lifted — floor 0.65, edge peaks at 1.0
     const centerDist   = Math.abs(i - (n - 1) / 2) / Math.max(n / 2, 1);
-    const tickOpacity  = 0.65 + 0.35 * (1 - centerDist * 0.5);  // v4: was 0.45+0.40
-    tick.setAttribute('stroke', 'var(--border-bright)');          // v4: was border-dim
-    tick.setAttribute('stroke-width', '0.9');                     // v4: was 0.8
+    const tickOpacity  = 0.38 + 0.26 * (1 - centerDist * 0.5);
+    tick.setAttribute('stroke', 'rgba(174,194,214,0.42)');
+    tick.setAttribute('stroke-width', '0.7');
     tick.setAttribute('opacity', tickOpacity.toFixed(2));
     svgEl.appendChild(tick);
   });
@@ -441,12 +545,13 @@ if (STATE.get('showChartLabels')) {
     txt.setAttribute('font-family', 'var(--font-data)');
     txt.setAttribute('font-size', '7.5');
     txt.setAttribute('fill', 'var(--text-secondary)');   // v4: was text-secondary at 0.75
-    txt.setAttribute('opacity', '0.90');                  // v4: was 0.75
+    txt.setAttribute('opacity', '0.72');
     txt.textContent = points[i]?.label ?? `#${i}`;
     svgEl.appendChild(txt);
   });
 
   // ── Slope annotation ──────────────────────────────────────────────────────
+  _nameOverlay(svgEl, _displayName(strategy.name));
   _drawSlopeAnnotation(svgEl, pts, points, xPx, yPx, n);
 
 }
@@ -456,9 +561,9 @@ if (STATE.get('showChartLabels')) {
 function _nameOverlay(svgEl, name) {
   if (!name) return;
 
-  const text = name.toUpperCase();
-  // Estimate text width: ~6.2px per char at font-size 10
-  const tw   = text.length * 5.8 + 14;
+  const rawText = name.toUpperCase();
+  const text = rawText.length > 18 ? `${rawText.slice(0, 15)}...` : rawText;
+  const tw = Math.min(120, text.length * 5.5 + 14);
 
   // Pill background
   const pill = _el('rect');
@@ -466,32 +571,34 @@ function _nameOverlay(svgEl, name) {
   pill.setAttribute('y', '0');
   pill.setAttribute('width',  tw.toFixed(1));
   pill.setAttribute('height', '17');
-  pill.setAttribute('rx', '1');
-  pill.setAttribute('fill', 'var(--bg-deep)');
-  pill.setAttribute('opacity', '0.88');          // v4: slightly more opaque
+  pill.setAttribute('rx', '7');
+  pill.setAttribute('fill', 'rgba(11,18,32,0.82)');
+  pill.setAttribute('stroke', 'rgba(126,232,225,0.16)');
+  pill.setAttribute('stroke-width', '0.8');
+  pill.setAttribute('opacity', '0.96');
   svgEl.appendChild(pill);
 
   // Accent left border bar
   const bar = _el('rect');
   bar.setAttribute('x', '0');
-  bar.setAttribute('y', '0');
-  bar.setAttribute('width', '2');
-  bar.setAttribute('height', '17');
-  bar.setAttribute('fill', 'var(--accent)');
+  bar.setAttribute('y', '3');
+  bar.setAttribute('width', '1.5');
+  bar.setAttribute('height', '11');
+  bar.setAttribute('fill', 'rgba(126,232,225,0.78)');
   bar.setAttribute('opacity', '1.0');            // v4: was 0.85 — full saturation
   svgEl.appendChild(bar);
 
   // Text
   const txt = _el('text');
-  txt.setAttribute('x', '7');
+  txt.setAttribute('x', '8');
   txt.setAttribute('y', '9');
   txt.setAttribute('text-anchor', 'start');
   txt.setAttribute('dominant-baseline', 'middle');
   txt.setAttribute('font-family', 'var(--font-ui)');
-  txt.setAttribute('font-size', '9.5');
+  txt.setAttribute('font-size', rawText.length > 14 ? '8.4' : '9.2');
   txt.setAttribute('font-weight', '700');
   txt.setAttribute('letter-spacing', '0.09em');
-  txt.setAttribute('fill', 'var(--text-primary)');  // v4: was text-secondary
+  txt.setAttribute('fill', 'rgba(232,244,255,0.94)');
   txt.setAttribute('opacity', '0.96');               // v4: was 0.92
   txt.style.filter = 'drop-shadow(0 1px 2px rgba(0,0,0,0.9))';
   txt.textContent = text;
@@ -566,6 +673,8 @@ function _drawValueLabels(svgEl, pts, xPx, yPx, cH) {
 
   pts.forEach((p, i) => {
     if (p.live == null || isNaN(p.live)) return;
+    const prev = i > 0 ? pts[i - 1]?.live : null;
+    if (prev != null && !isNaN(prev) && Math.abs(p.live - prev) < 0.0001) return;
 
     // Filter for first, last, high, low, and alternating points
     const isFirst = i === 0;
@@ -574,27 +683,25 @@ function _drawValueLabels(svgEl, pts, xPx, yPx, cH) {
     const isLo    = Math.abs(p.live - loVal) < 0.0001;
     // 2. Local Maxima / Minima (Peaks and Valleys)
     // Safely check neighbors to see if current point is higher or lower than both
-    const prev = !isFirst ? pts[i - 1]?.live : null;
     const next = !isLast  ? pts[i + 1]?.live : null;
     
     const isLocalMax = prev !== null && next !== null && p.live > prev && p.live > next;
     const isLocalMin = prev !== null && next !== null && p.live < prev && p.live < next;
 
-    // 3. Updated Alternating Interval (Every 4th point)
-    const isAlt4 = i % 4 === 0;
-
-    // Combine filters: Keep the point if it meets ANY of these conditions
-    if (!isFirst && !isLast && !isHi && !isLo && !isLocalMax && !isLocalMin && !isAlt4) return;
+    // Keep labels sparse: latest point, extrema, and local pivots only.
+    if (!isLast && !isHi && !isLo && !isLocalMax && !isLocalMin) return;
    
     const x = xPx(i);
     const y = yPx(p.live);
     const text = p.live.toFixed(1);
     const width = Math.max(18, text.length * 5.3 + 4);
     const height = 9;
-    const preferAbove = y > PAD.top + cH * 0.42;
+    const forceAbove = isLocalMax || isHi;
+    const forceBelow = isLocalMin || isLo;
+    const preferAbove = forceAbove ? true : forceBelow ? false : y > PAD.top + cH * 0.42;
     const offsets = preferAbove
-      ? [[0, -11], [0, 12], [-10, -13], [10, -13], [-10, 14], [10, 14]]
-      : [[0, 11], [0, -12], [-10, 13], [10, 13], [-10, -14], [10, -14]];
+      ? [[0, -11], [-10, -13], [10, -13], [0, 12], [-10, 14], [10, 14]]
+      : [[0, 11], [-10, 13], [10, 13], [0, -12], [-10, -14], [10, -14]];
 
     let placed = null;
     for (const [dx, dy] of offsets) {
@@ -642,6 +749,31 @@ function _el(tag) {
   return document.createElementNS('http://www.w3.org/2000/svg', tag);
 }
 
+function _smoothPath(pts) {
+  const valid = pts.filter(([, y]) => y != null && !isNaN(y));
+  if (!valid.length) return '';
+  if (valid.length < 3) {
+    return valid
+      .map(([x, y], i) => `${i === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`)
+      .join(' ');
+  }
+
+  let d = `M${valid[0][0].toFixed(1)},${valid[0][1].toFixed(1)}`;
+  for (let i = 0; i < valid.length - 1; i++) {
+    const p0 = valid[Math.max(0, i - 1)];
+    const p1 = valid[i];
+    const p2 = valid[i + 1];
+    const p3 = valid[Math.min(valid.length - 1, i + 2)];
+    const tension = 0.22;
+    const c1x = p1[0] + (p2[0] - p0[0]) * tension;
+    const c1y = p1[1] + (p2[1] - p0[1]) * tension;
+    const c2x = p2[0] - (p3[0] - p1[0]) * tension;
+    const c2y = p2[1] - (p3[1] - p1[1]) * tension;
+    d += ` C${c1x.toFixed(1)},${c1y.toFixed(1)} ${c2x.toFixed(1)},${c2y.toFixed(1)} ${p2[0].toFixed(1)},${p2[1].toFixed(1)}`;
+  }
+  return d;
+}
+
 function _fixedMarkerLayer(svgEl) {
   const parent = svgEl.parentElement;
   if (!parent) return null;
@@ -655,15 +787,19 @@ function _fixedMarkerLayer(svgEl) {
   return layer;
 }
 
-function _addFixedMarker(layer, x, y, w, h, stroke, fill) {
-  if (!layer) return;
+function _addFixedMarker(layer, x, y, w, h, stroke, fill, opts = {}) {
+  if (!layer) return null;
   const marker = document.createElement('span');
   marker.className = 'chart-fixed-marker';
+  if (opts.pivot) marker.classList.add('chart-fixed-marker--pivot');
+  if (opts.latest) marker.classList.add('chart-fixed-marker--latest');
+  if (opts.hover) marker.classList.add('chart-fixed-marker--hover');
   marker.style.setProperty('--marker-stroke', stroke);
   marker.style.setProperty('--marker-fill', fill);
   marker.style.left = `${(x / w) * 100}%`;
   marker.style.top = `${(y / h) * 100}%`;
   layer.appendChild(marker);
+  return marker;
 }
 
 function _noDataLabel(svgEl, x, y) {
