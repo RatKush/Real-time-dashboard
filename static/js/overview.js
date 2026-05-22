@@ -479,7 +479,8 @@ function _sparkFull(svg, strat, color, isOut, groupColor, markerLayer) {
   const mode = STATE.get('viewMode') || 'delta';
 
   const vals = pts.map(p => _pointValue(p, mode));
-  const valid = vals.filter(v => v != null);
+  const settleVals = mode === 'delta' ? [] : pts.map(p => p.settle ?? null);
+  const valid = [...vals, ...settleVals].filter(v => v != null);
   if (!valid.length) return;
 
   const maxVal = Math.max(...valid);
@@ -543,6 +544,11 @@ function _sparkFull(svg, strat, color, isOut, groupColor, markerLayer) {
     return v != null ? [xp(i), yp(v)] : null;
   }).filter(Boolean);
 
+  const settleCoords = mode === 'delta' ? [] : pts.map((p, i) => {
+    const v = p.settle ?? null;
+    return v != null ? [xp(i), yp(v)] : null;
+  }).filter(Boolean);
+
   if (coords.length >= 2) {
     // Gradient fill
     const gid = `spk_${Math.random().toString(36).slice(2, 7)}`;
@@ -571,6 +577,25 @@ function _sparkFull(svg, strat, color, isOut, groupColor, markerLayer) {
     line.setAttribute('stroke', color); line.setAttribute('stroke-width','1.6');
     line.setAttribute('stroke-linejoin','round'); line.setAttribute('stroke-linecap','round');
     svg.appendChild(line);
+  }
+
+  if (mode !== 'delta' && settleCoords.length >= 2) {
+    const settleD = settleCoords.map(([x,y],i) => `${i===0?'M':'L'}${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
+    const settleLine = mk('path');
+    settleLine.setAttribute('d', settleD);
+    settleLine.setAttribute('fill', 'none');
+    settleLine.setAttribute('stroke', 'var(--text-secondary)');
+    settleLine.setAttribute('stroke-width', '0.7');
+    settleLine.setAttribute('stroke-linejoin', 'round');
+    settleLine.setAttribute('stroke-linecap', 'round');
+    settleLine.setAttribute('stroke-dasharray', '4 4');
+    settleLine.setAttribute('opacity', '0.52');
+    svg.appendChild(settleLine);
+
+    pts.forEach((p, i) => {
+      if (p.settle == null) return;
+      _addFixedMarker(markerLayer, xp(i), yp(p.settle), W, TOTAL_H, 'var(--text-secondary)', 'ov-fixed-marker--settle');
+    });
   }
 
   pts.forEach((p, i) => {
@@ -817,7 +842,8 @@ function _attachCrosshair(svg, strat, mkt, isOut, markerLayer, lineColor, paneLa
 
   const mode = STATE.get('viewMode') || 'delta';
   const vals = pts.map(p => _pointValue(p, mode));
-  const valid = vals.filter(v => v != null);
+  const settleVals = mode === 'delta' ? [] : pts.map(p => p.settle ?? null);
+  const valid = [...vals, ...settleVals].filter(v => v != null);
   if (!valid.length) return;
 
   let minV = Math.min(...valid), maxV = Math.max(...valid);

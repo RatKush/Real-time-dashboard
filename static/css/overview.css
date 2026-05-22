@@ -339,9 +339,17 @@
 }
 
 .ov-fixed-marker--hover {
-  width: 5px;
-  height: 5px;
+  width: 7px;
+  height: 7px;
   z-index: 2;
+}
+
+.ov-fixed-marker--settle {
+  width: 4px;
+  height: 4px;
+  background: var(--bg-deep);
+  border-color: color-mix(in srgb, var(--text-secondary) 50%, transparent);
+  opacity: 0.50;
 }
 
 /* ── Tally column (max upside / max downside) ────────────────────────────── */

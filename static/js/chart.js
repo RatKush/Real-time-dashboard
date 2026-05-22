@@ -451,24 +451,40 @@ export function renderMiniChart(svgEl, strategy, mode) {
   }
 
   // ── Y-axis tick labels — v4: brighter ────────────────────────────────────
-  ticks.forEach(t => {
-    if (mode === 'delta' && Math.abs(t) < 0.0001) return;
+  let hasZeroTickLabel = false;
+  const drawYTickLabel = (t) => {
+    if (Math.abs(t) < 0.0001) hasZeroTickLabel = true;
     const y     = yPx(t);
-    const isNeg = t < -0.0001;
-    const col   = isNeg ? 'var(--col-neg)' : 'var(--text-secondary)';
+    const isZero = Math.abs(t) < 0.0001;
+    const col   = 'var(--text-secondary)';
+
+    const tick = _el('line');
+    tick.setAttribute('x1', (PAD.left - 5).toString());
+    tick.setAttribute('x2', PAD.left.toString());
+    tick.setAttribute('y1', y.toFixed(1));
+    tick.setAttribute('y2', y.toFixed(1));
+    tick.setAttribute('stroke', 'rgba(174,194,214,0.42)');
+    tick.setAttribute('stroke-width', '0.7');
+    tick.setAttribute('opacity', isZero ? '0.68' : '0.52');
+    svgEl.appendChild(tick);
 
     const txt = _el('text');
-    txt.setAttribute('x', (PAD.left - 4).toString());   // v4: +1px more left room
+    txt.setAttribute('x', (PAD.left - 8).toString());
     txt.setAttribute('y', (y + 1).toFixed(1));
     txt.setAttribute('text-anchor', 'end');
     txt.setAttribute('dominant-baseline', 'middle');
     txt.setAttribute('font-family', 'var(--font-data)');
     txt.setAttribute('font-size', '7.5');
     txt.setAttribute('fill', col);
-    txt.setAttribute('opacity', '0.52');
-    txt.textContent = Math.abs(_fmtTick(t));
+    txt.setAttribute('opacity', isZero ? '0.68' : '0.52');
+    txt.textContent = _fmtTick(t);
     svgEl.appendChild(txt);
+  };
+
+  ticks.forEach(t => {
+    drawYTickLabel(t);
   });
+  if (mode === 'delta' && minV < 0 && maxV > 0 && !hasZeroTickLabel) drawYTickLabel(0);
 
   // ── X-axis ticks — continuous at every point ──────────────────────────────
   // v4: opacity floor raised, stroke upgraded, tick height increased

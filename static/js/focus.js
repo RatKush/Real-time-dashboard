@@ -269,16 +269,31 @@ function _renderChart(strategy, mode) {
 
   // ── fix 4: ZERO LINE — prominent, glowing, labelled ───────────────────────
   if (hasZero) {
+    const zeroIsAnchor = mode === 'delta';
+    const zeroStroke = zeroIsAnchor
+      ? 'color-mix(in srgb, var(--accent-bright) 58%, var(--text-secondary))'
+      : 'color-mix(in srgb, var(--col-zero) 58%, var(--text-secondary))';
     // Solid rule
     const zl = mk('line');
     zl.setAttribute('x1', PAD.left.toString());
     zl.setAttribute('x2', (PAD.left + cW).toString());
     zl.setAttribute('y1', zeroY.toFixed(1));
     zl.setAttribute('y2', zeroY.toFixed(1));
-    zl.setAttribute('stroke', 'var(--col-zero)');
-    zl.setAttribute('stroke-width', '2');
-    zl.setAttribute('opacity', '1');
+    zl.setAttribute('stroke', zeroStroke);
+    zl.setAttribute('stroke-width', zeroIsAnchor ? '1.35' : '1.1');
+    zl.setAttribute('opacity', zeroIsAnchor ? '0.82' : '0.72');
+    if (!zeroIsAnchor) zl.setAttribute('stroke-dasharray', '5 5');
     svgEl.appendChild(zl);
+
+    const zTick = mk('line');
+    zTick.setAttribute('x1', (PAD.left - 7).toString());
+    zTick.setAttribute('x2', PAD.left.toString());
+    zTick.setAttribute('y1', zeroY.toFixed(1));
+    zTick.setAttribute('y2', zeroY.toFixed(1));
+    zTick.setAttribute('stroke', zeroStroke);
+    zTick.setAttribute('stroke-width', zeroIsAnchor ? '1.35' : '1.1');
+    zTick.setAttribute('opacity', zeroIsAnchor ? '0.86' : '0.76');
+    svgEl.appendChild(zTick);
 
     // "0" label on the left axis (replaces dim tick label)
     const zLabel = mk('text');
@@ -287,10 +302,10 @@ function _renderChart(strategy, mode) {
     zLabel.setAttribute('text-anchor', 'end');
     zLabel.setAttribute('dominant-baseline', 'middle');
     zLabel.setAttribute('font-family', 'var(--font-data)');
-    zLabel.setAttribute('font-size', '15');
-    zLabel.setAttribute('font-weight', '800');
-    zLabel.setAttribute('fill', 'var(--col-zero)');
-    zLabel.setAttribute('opacity', '1');
+    zLabel.setAttribute('font-size', zeroIsAnchor ? '13.5' : '12.8');
+    zLabel.setAttribute('font-weight', zeroIsAnchor ? '700' : '650');
+    zLabel.setAttribute('fill', zeroIsAnchor ? 'color-mix(in srgb, var(--accent-bright) 68%, var(--text-primary))' : 'color-mix(in srgb, var(--col-zero) 52%, var(--text-primary))');
+    zLabel.setAttribute('opacity', zeroIsAnchor ? '0.88' : '0.78');
     zLabel.textContent = '0';
     svgEl.appendChild(zLabel);
   }
@@ -426,13 +441,18 @@ function _renderChart(strategy, mode) {
     sp.setAttribute('opacity', '0.85');
     svgEl.appendChild(sp);
 
+    const lastSettleIdx = pts.reduce((last, p, i) => p.settle != null ? i : last, -1);
     pts.forEach((p, i) => {
       if (p.settle == null) return;
+      const isLastSettle = i === lastSettleIdx;
+      const isAbsMode = mode !== 'delta';
       const sa = mk('circle');
       sa.setAttribute('cx', xPx(i).toFixed(1)); sa.setAttribute('cy', yPx(p.settle).toFixed(1));
-      sa.setAttribute('r', '2');
-      sa.setAttribute('fill', 'var(--col-settle)');
-      sa.setAttribute('opacity', '0.95');
+      sa.setAttribute('r', isAbsMode ? (isLastSettle ? '5' : '3.2') : '2');
+      sa.setAttribute('fill', isAbsMode ? 'var(--bg-deep)' : 'var(--col-settle)');
+      sa.setAttribute('stroke', isAbsMode ? 'var(--col-settle)' : 'none');
+      sa.setAttribute('stroke-width', isAbsMode ? (isLastSettle ? '1.7' : '1.2') : '0');
+      sa.setAttribute('opacity', isAbsMode ? (isLastSettle ? '0.98' : '0.82') : '0.95');
       svgEl.appendChild(sa);
     });
   }
@@ -443,10 +463,10 @@ function _renderChart(strategy, mode) {
     bloom.setAttribute('d', liveD);
     bloom.setAttribute('fill', 'none');
     bloom.setAttribute('stroke', 'var(--col-live)');
-    bloom.setAttribute('stroke-width', '6');
+    bloom.setAttribute('stroke-width', '3.8');
     bloom.setAttribute('stroke-linejoin', 'round');
     bloom.setAttribute('stroke-linecap', 'round');
-    bloom.setAttribute('opacity', '0.22');
+    bloom.setAttribute('opacity', '0.11');
     bloom.setAttribute('filter', `url(#${glowId})`);
     svgEl.appendChild(bloom);
 
