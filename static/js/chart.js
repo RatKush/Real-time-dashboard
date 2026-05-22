@@ -782,7 +782,7 @@ function _smoothPath(pts) {
     const p1 = valid[i];
     const p2 = valid[i + 1];
     const p3 = valid[Math.min(valid.length - 1, i + 2)];
-    const tension = 0.14;
+    const tension = 0.08;
     const c1x = p1[0] + (p2[0] - p0[0]) * tension;
     const c1y = p1[1] + (p2[1] - p0[1]) * tension;
     const c2x = p2[0] - (p3[0] - p1[0]) * tension;
