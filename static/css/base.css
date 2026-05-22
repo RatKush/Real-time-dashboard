@@ -42,6 +42,14 @@ html, body { height: 100%; overflow: hidden; }
   --col-neg:        #c44848;
   --col-neg-dim:    rgba(196,72,72,0.12);
 
+  --chart-card-bg:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-raised) 96%, white 4%), var(--bg-deep));
+  --chart-card-bg-hover:
+    linear-gradient(180deg, color-mix(in srgb, var(--bg-hover) 94%, white 6%), var(--bg-raised));
+  --chart-pill-bg: color-mix(in srgb, var(--bg-deep) 88%, transparent);
+  --chart-pill-text: var(--text-primary);
+  --chart-pill-border: color-mix(in srgb, var(--accent) 24%, var(--border-dim));
+
   /* Typography */
   --font-data:   'JetBrains Mono', 'Fira Code', monospace;
   --font-ui:     'Syne', 'Inter', sans-serif;

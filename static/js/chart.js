@@ -29,7 +29,7 @@ import { modePoints, toY, toX } from './utils.js';
 
 const W   = 400;
 const H   = 200;
-const PAD = { top: 28, right: 8, bottom: 34, left: 26 };
+const PAD = { top: 26, right: 5, bottom: 26, left: 20 };
 
 const tooltipEl = document.getElementById('chartTooltip');
 
@@ -176,7 +176,7 @@ export function renderMiniChart(svgEl, strategy, mode) {
     zl.setAttribute('x2', (PAD.left + cW).toString());
     zl.setAttribute('y1', zy.toFixed(1));
     zl.setAttribute('y2', zy.toFixed(1));
-    zl.setAttribute('stroke', 'rgba(126,232,225,0.58)');
+    zl.setAttribute('stroke', 'var(--accent-bright)');
     zl.setAttribute('stroke-width', '1.05');
     zl.setAttribute('stroke-dasharray', '4 4');
     zl.setAttribute('clip-path', `url(#${clipId})`);
@@ -263,7 +263,7 @@ export function renderMiniChart(svgEl, strategy, mode) {
     const path = _el('path');
     path.setAttribute('d', liveD);
     path.setAttribute('fill', 'none');
-    path.setAttribute('stroke', 'rgba(224,246,255,0.96)');
+    path.setAttribute('stroke', 'var(--col-live)');
     path.setAttribute('stroke-width', '1.35');
     path.setAttribute('stroke-linejoin', 'round');
     path.setAttribute('stroke-linecap', 'round');
@@ -274,7 +274,7 @@ export function renderMiniChart(svgEl, strategy, mode) {
     const sharp = _el('path');
     sharp.setAttribute('d', liveD);
     sharp.setAttribute('fill', 'none');
-    sharp.setAttribute('stroke', 'rgba(126,232,225,0.72)');
+    sharp.setAttribute('stroke', 'var(--accent-bright)');
     sharp.setAttribute('stroke-width', '0.5');
     sharp.setAttribute('opacity', '0.40');
     sharp.setAttribute('stroke-linejoin', 'round');
@@ -444,46 +444,10 @@ export function renderMiniChart(svgEl, strategy, mode) {
     _hideTooltip();
   });
 
-if (STATE.get('showChartLabels')) {
+  if (STATE.get('showChartLabels')) {
     _drawValueLabels(svgEl, pts, xPx, yPx, cH);
   } else {
-    // Default (labels OFF): show extremes only — first, last, hi, lo
-    const n2 = pts.length;
-    pts.forEach((p, i) => {
-      if (p.live == null) return;
-      const isLast  = i === n2 - 1;
-      const isHi    = Math.abs(p.live - hiVal) < 0.0001;
-      const isLo    = Math.abs(p.live - loVal) < 0.0001 && n2 > 1;
-      const prev = i > 0 ? pts[i - 1]?.live : null;
-      const next = i < n2 - 1 ? pts[i + 1]?.live : null;
-      const isPeak = prev != null && next != null && p.live > prev && p.live > next;
-      const isTrough = prev != null && next != null && p.live < prev && p.live < next;
-      if (i > 0 && prev != null && Math.abs(p.live - prev) < 0.0001) return;
-      if (!isLast && !isHi && !isLo && !isPeak && !isTrough) return;
-
-      const x   = xPx(i);
-      const y   = yPx(p.live);
-      const forceAbove = isPeak || isHi;
-      const forceBelow = isTrough || isLo;
-      const isUpper = y < PAD.top + cH * 0.5;
-      const ly  = forceAbove ? y - 9 : forceBelow ? y + 9 : isUpper ? y + 8 : y - 8;
-      const lx  = isLast ? x - 2 : x;
-      const anchor = isLast ? 'end' : 'middle';
-      const col = isHi || isPeak ? 'var(--col-pos)' : isLo || isTrough ? 'var(--col-neg)' : 'var(--text-secondary)';
-
-      const lbl = _el('text');
-      lbl.setAttribute('x', lx.toFixed(1));
-      lbl.setAttribute('y', ly.toFixed(1));
-      lbl.setAttribute('text-anchor', anchor);
-      lbl.setAttribute('dominant-baseline', 'middle');
-      lbl.setAttribute('font-family', 'var(--font-data)');
-      lbl.setAttribute('font-size', '8.5');
-      lbl.setAttribute('font-weight', isHi || isLo ? '500' : '350');
-      lbl.setAttribute('fill', col);
-      lbl.style.pointerEvents = 'none';
-      lbl.textContent = Math.abs(p.live).toFixed(1);
-      svgEl.appendChild(lbl);
-    });
+    _drawExtremaLabels(svgEl, pts, xPx, yPx, cH);
   }
 
   // ── Y-axis tick labels — v4: brighter ────────────────────────────────────
@@ -543,7 +507,7 @@ if (STATE.get('showChartLabels')) {
     txt.setAttribute('y', (baseLineY + 11).toFixed(1));  // v4: shifted down to match taller ticks
     txt.setAttribute('text-anchor', 'middle');
     txt.setAttribute('font-family', 'var(--font-data)');
-    txt.setAttribute('font-size', '7.5');
+    txt.setAttribute('font-size', '8');
     txt.setAttribute('fill', 'var(--text-secondary)');   // v4: was text-secondary at 0.75
     txt.setAttribute('opacity', '0.72');
     txt.textContent = points[i]?.label ?? `#${i}`;
@@ -562,8 +526,8 @@ function _nameOverlay(svgEl, name) {
   if (!name) return;
 
   const rawText = name.toUpperCase();
-  const text = rawText.length > 18 ? `${rawText.slice(0, 15)}...` : rawText;
-  const tw = Math.min(120, text.length * 5.5 + 14);
+  const text = rawText.length > 28 ? `${rawText.slice(0, 25)}...` : rawText;
+  const tw = Math.min(185, text.length * 6.1 + 22);
 
   // Pill background
   const pill = _el('rect');
@@ -572,8 +536,8 @@ function _nameOverlay(svgEl, name) {
   pill.setAttribute('width',  tw.toFixed(1));
   pill.setAttribute('height', '17');
   pill.setAttribute('rx', '7');
-  pill.setAttribute('fill', 'rgba(11,18,32,0.82)');
-  pill.setAttribute('stroke', 'rgba(126,232,225,0.16)');
+  pill.setAttribute('fill', 'var(--chart-pill-bg)');
+  pill.setAttribute('stroke', 'var(--chart-pill-border)');
   pill.setAttribute('stroke-width', '0.8');
   pill.setAttribute('opacity', '0.96');
   svgEl.appendChild(pill);
@@ -584,7 +548,7 @@ function _nameOverlay(svgEl, name) {
   bar.setAttribute('y', '3');
   bar.setAttribute('width', '1.5');
   bar.setAttribute('height', '11');
-  bar.setAttribute('fill', 'rgba(126,232,225,0.78)');
+  bar.setAttribute('fill', 'var(--accent-bright)');
   bar.setAttribute('opacity', '1.0');            // v4: was 0.85 — full saturation
   svgEl.appendChild(bar);
 
@@ -598,7 +562,7 @@ function _nameOverlay(svgEl, name) {
   txt.setAttribute('font-size', rawText.length > 14 ? '8.4' : '9.2');
   txt.setAttribute('font-weight', '700');
   txt.setAttribute('letter-spacing', '0.09em');
-  txt.setAttribute('fill', 'rgba(232,244,255,0.94)');
+  txt.setAttribute('fill', 'var(--chart-pill-text)');
   txt.setAttribute('opacity', '0.96');               // v4: was 0.92
   txt.style.filter = 'drop-shadow(0 1px 2px rgba(0,0,0,0.9))';
   txt.textContent = text;
@@ -676,20 +640,17 @@ function _drawValueLabels(svgEl, pts, xPx, yPx, cH) {
     const prev = i > 0 ? pts[i - 1]?.live : null;
     if (prev != null && !isNaN(prev) && Math.abs(p.live - prev) < 0.0001) return;
 
-    // Filter for first, last, high, low, and alternating points
+    // Show the label toggle as a sparse readout: alternate nodes plus extremes.
     const isFirst = i === 0;
     const isLast  = i === pts.length - 1;
     const isHi    = Math.abs(p.live - hiVal) < 0.0001;
     const isLo    = Math.abs(p.live - loVal) < 0.0001;
-    // 2. Local Maxima / Minima (Peaks and Valleys)
-    // Safely check neighbors to see if current point is higher or lower than both
+    const isAlternate = i % 2 === 0;
     const next = !isLast  ? pts[i + 1]?.live : null;
-    
     const isLocalMax = prev !== null && next !== null && p.live > prev && p.live > next;
     const isLocalMin = prev !== null && next !== null && p.live < prev && p.live < next;
 
-    // Keep labels sparse: latest point, extrema, and local pivots only.
-    if (!isLast && !isHi && !isLo && !isLocalMax && !isLocalMin) return;
+    if (!isFirst && !isLast && !isAlternate && !isHi && !isLo && !isLocalMax && !isLocalMin) return;
    
     const x = xPx(i);
     const y = yPx(p.live);
@@ -743,6 +704,63 @@ function _drawValueLabels(svgEl, pts, xPx, yPx, cH) {
   });
 }
 
+function _drawExtremaLabels(svgEl, pts, xPx, yPx, cH) {
+  const validVals = pts.map(p => p.live).filter(v => v != null && !isNaN(v));
+  if (!validVals.length) return;
+
+  const hiVal = Math.max(...validVals);
+  const loVal = Math.min(...validVals);
+  const seen = new Set();
+
+  pts.forEach((p, i) => {
+    if (p.live == null || isNaN(p.live)) return;
+
+    const prev = i > 0 ? pts[i - 1]?.live : null;
+    const next = i < pts.length - 1 ? pts[i + 1]?.live : null;
+    const isHi = Math.abs(p.live - hiVal) < 0.0001;
+    const isLo = Math.abs(p.live - loVal) < 0.0001;
+    const isLocalMax = prev != null && next != null && p.live > prev && p.live > next;
+    const isLocalMin = prev != null && next != null && p.live < prev && p.live < next;
+
+    if (!isHi && !isLo && !isLocalMax && !isLocalMin) return;
+
+    const type = isHi ? 'hi'
+      : isLo ? 'lo'
+        : isLocalMax ? `local-max-${p.live.toFixed(4)}`
+          : `local-min-${p.live.toFixed(4)}`;
+
+    if (seen.has(type)) return;
+    seen.add(type);
+
+    const x = xPx(i);
+    const y = yPx(p.live);
+    const forceAbove = isHi || isLocalMax;
+    const ly = Math.max(PAD.top + 5, Math.min(PAD.top + cH - 5, y + (forceAbove ? -9 : 9)));
+    const anchor = x < PAD.left + 16 ? 'start' : x > W - PAD.right - 16 ? 'end' : 'middle';
+    const lx = anchor === 'start' ? PAD.left + 2 : anchor === 'end' ? W - PAD.right - 2 : x;
+
+    const lbl = _el('text');
+    lbl.setAttribute('x', lx.toFixed(1));
+    lbl.setAttribute('y', ly.toFixed(1));
+    lbl.setAttribute('text-anchor', anchor);
+    lbl.setAttribute('dominant-baseline', 'middle');
+    lbl.setAttribute('font-family', 'var(--font-data)');
+    lbl.setAttribute('font-size', '7.5');
+    lbl.setAttribute('font-weight', '350');
+    lbl.setAttribute('fill', 'var(--col-live)');
+    lbl.setAttribute('opacity', '0.82');
+    lbl.style.filter = 'drop-shadow(0 1px 2px rgba(0,0,0,0.85))';
+    lbl.style.pointerEvents = 'none';
+    lbl.textContent = _fmtSignedLabel(p.live);
+    svgEl.appendChild(lbl);
+  });
+}
+
+function _fmtSignedLabel(v) {
+  if (Math.abs(v) < 0.0001) return '0.0';
+  return `${v > 0 ? '+' : ''}${v.toFixed(1)}`;
+}
+
 
 // ── SVG helpers ───────────────────────────────────────────────────────────────
 function _el(tag) {
@@ -764,7 +782,7 @@ function _smoothPath(pts) {
     const p1 = valid[i];
     const p2 = valid[i + 1];
     const p3 = valid[Math.min(valid.length - 1, i + 2)];
-    const tension = 0.22;
+    const tension = 0.14;
     const c1x = p1[0] + (p2[0] - p0[0]) * tension;
     const c1y = p1[1] + (p2[1] - p0[1]) * tension;
     const c2x = p2[0] - (p3[0] - p1[0]) * tension;

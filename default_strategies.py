@@ -5,8 +5,8 @@ Defines which strategies appear on the "Default" chip for each market.
 
 Rules:
   ── General markets (all except the special groups below):
-     S3, S6, S12, L3, L6, L12, D3, D6
-     (Note: "Out" and ratio variants are excluded from general defaults)
+     Out, S3, S6, S12, L3, L6, L12, D6
+     (Note: ratio variants are excluded from general defaults)
 
   ── Group A  {EMP, MPC, SZI0}:
      Out
@@ -29,7 +29,7 @@ Rules:
        2×S1 − 1×S1(n+1)   weights: [2, -3, 1]
        2×S1 − 3×S1(n+1)   weights: [2, -3]
        3×S1 − 2×S1(n+1)   weights: [3, -2]
-     S3, S6, L3, L6
+     S3, S6, L3
 
   ── Group B2 {VIX, VOXX}:
      Out
@@ -69,7 +69,7 @@ _INTER_MARKETS = {"SR3 VS SO3", "SR3 VS ER", "ER VS SO3"}
 
 # General default strategy names — ratio variants are intentionally
 # excluded; matched case-insensitively against ratio_bg names.
-_GENERAL_DEFAULT_NAMES = ["Out", "S3", "S6", "S12", "L3", "L6", "L12", "D3", "D6"]
+_GENERAL_DEFAULT_NAMES = ["Out", "S3", "S6", "S12", "L3", "L6", "L12", "D6"]
 
 # Inter default strategy base-names (before "vs" renaming)
 _INTER_DEFAULT_NAMES = ["S3", "S6", "S12", "L6", "L12"]
@@ -175,8 +175,7 @@ def _lookup_names(
 def _build_general(ratio_by_name: Dict[str, dict]) -> List[dict]:
     """
     Default chip for general markets.
-    Returns strategies S3, S6, S12, L3, L6, L12, D3, D6 from ratio_bg.
-    "Out" and ratio variants are excluded.
+    Returns strategies Out, S3, S6, S12, L3, L6, L12, D6 from ratio_bg.
     Unmatched names are silently skipped.
     """
     return _lookup_names(_GENERAL_DEFAULT_NAMES, ratio_by_name)
@@ -206,10 +205,10 @@ def _build_group_b1(ratio_by_name: Dict[str, dict]) -> List[dict]:
     Order:
       1. Out                    (from ratio_bg)
       2. S1-ratio variants      (inline: 1×S1−2×S1, 2×S1−1×S1, 2×S1−3×S1, 3×S1−2×S1)
-      3. S3, S6, L3, L6         (from ratio_bg)
+      3. S3, S6, L3             (from ratio_bg)
     """
     result = _lookup_names(["Out"], ratio_by_name)
-    result.extend(_lookup_names(["S3", "S6", "L3", "L6"], ratio_by_name))
+    result.extend(_lookup_names(["S3", "S6", "L3"], ratio_by_name))
     result.extend(_S1_RATIO_EXTRA)
     return result
 

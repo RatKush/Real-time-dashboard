@@ -9,7 +9,7 @@
 import STATE from './state.js';
 import { saveCardOrder } from './api.js';
 import { renderMiniChart } from './chart.js';
-import { fmtDelta, getActiveStrategies, modePoints } from './utils.js';
+import { getActiveStrategies, modePoints } from './utils.js';
 
 const gridEl = document.getElementById('gridContainer');
 let _dragSrcName = null;
@@ -91,13 +91,9 @@ function _createCard(strategy) {
   const pill = document.createElement('div');
   pill.className = 'card-topology-pill';
 
-  const metrics = document.createElement('div');
-  metrics.className = 'card-metric-strip';
-
   //card.appendChild(header);
   card.appendChild(svg);
   card.appendChild(pill);
-  card.appendChild(metrics);
 
   _updateCard(card, strategy, mode);
 
@@ -220,7 +216,7 @@ function _orderedStrategies(strategies) {
 
 const TOPOLOGY_CONFIGS = {
   rates: {
-    rows: [['Out', 'S12'], ['S6', 'L6', 'D6'], ['S3', 'L3', 'D3', 'L12']],
+    rows: [['Out', 'S12'], ['S6', 'L6', 'D6'], ['S3', 'L3', 'L12']],
   },
   inter: {
     rows: [['S12', 'L12'], ['S3', 'S6', 'L6']],
@@ -228,8 +224,8 @@ const TOPOLOGY_CONFIGS = {
   b1: {
     rows: [
       ['Out', 'S3'],
-      ['L3', 'S6', 'L6'],
-      ['1xS1-2xS1(n+1)', '2xS1-1xS1(n+1)', '2xS1-3xS1(n+1)', '3xS1-2xS1(n+1)'],
+      ['L3', 'S6', '1xS1-2xS1(n+1)'],
+      ['2xS1-1xS1(n+1)', '2xS1-3xS1(n+1)', '3xS1-2xS1(n+1)'],
     ],
   },
   b2: {
@@ -323,23 +319,11 @@ function _safeClass(name) {
 
 function _updateCardChrome(card, strategy, mode) {
   const pill = card.querySelector('.card-topology-pill');
-  const strip = card.querySelector('.card-metric-strip');
   const topo = _topologySummary(strategy, mode);
 
   if (pill) {
     pill.textContent = topo.label;
     pill.dataset.tone = topo.tone;
-  }
-
-  if (strip) {
-    strip.innerHTML = '';
-    _metricItems(strategy, mode).forEach(item => {
-      const el = document.createElement('span');
-      el.className = 'card-metric';
-      el.dataset.tone = item.tone || 'neu';
-      el.innerHTML = `<span>${item.k}</span><b>${item.v}</b>`;
-      strip.appendChild(el);
-    });
   }
 }
 
@@ -392,33 +376,6 @@ function _topologySummary(strategy, mode) {
   if (first - last > eps) return { label: 'FRONT HEAVY', tone: 'neg' };
   if (last - first > eps) return { label: 'BACK HEAVY', tone: 'pos' };
   return { label: range > eps * 3 ? 'DISLOCATED' : 'MIXED', tone: 'neu' };
-}
-
-function _metricItems(strategy, mode) {
-  const vals = _modeVals(strategy, mode);
-  if (!vals.length) return [{ k: 'RANGE', v: '--', tone: 'neu' }];
-
-  const high = Math.max(...vals);
-  const low = Math.min(...vals);
-  const range = high - low;
-  const rolls = [];
-  for (let i = 0; i < vals.length - 1; i++) rolls.push(vals[i + 1] - vals[i]);
-  const ru = rolls.length ? Math.max(...rolls) : null;
-  const rd = rolls.length ? Math.min(...rolls) : null;
-  const fmt = v => fmtDelta(v, Math.abs(v) >= 10 ? 1 : 2);
-  const items = [
-    { k: 'HIGH', v: fmt(high), tone: high > 0 ? 'pos' : high < 0 ? 'neg' : 'neu' },
-    { k: 'LOW', v: fmt(low), tone: low > 0 ? 'pos' : low < 0 ? 'neg' : 'neu' },
-    { k: 'RANGE', v: range.toFixed(range >= 10 ? 1 : 2), tone: 'neu' },
-    { k: 'RU', v: ru == null ? '--' : fmt(ru), tone: ru > 0 ? 'pos' : ru < 0 ? 'neg' : 'neu' },
-    { k: 'RD', v: rd == null ? '--' : fmt(rd), tone: rd > 0 ? 'pos' : rd < 0 ? 'neg' : 'neu' },
-  ];
-
-  if (_structureKey(strategy.name) === 'Out') {
-    const slope = vals[vals.length - 1] - vals[0];
-    items[2] = { k: slope >= 0 ? 'STEEPENING' : 'FLATTENING', v: fmt(slope), tone: slope > 0 ? 'pos' : slope < 0 ? 'neg' : 'neu' };
-  }
-  return items;
 }
 
 function _cardMap() {
